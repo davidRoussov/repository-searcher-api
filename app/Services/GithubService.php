@@ -59,7 +59,7 @@ class GithubService {
         ];
       });
 
-    $sortOrder = ($search['sortOrder'] ?? '') === 'asc' ? 'asc' : 'desc';
+    $sortOrder = ($search['sortOrder'] ?? '') === 'desc' ? 'desc' : 'asc';
     Log::debug("sortOrder: $sortOrder");
 
     $sortField = $search['sortField'];
