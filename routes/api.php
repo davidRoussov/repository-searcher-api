@@ -19,6 +19,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['prefix' => 'repositories'], function() {
+Route::group(['prefix' => 'repos'], function() {
   Route::get('', [RepositoryController::class, 'listRepositories']);
 });
