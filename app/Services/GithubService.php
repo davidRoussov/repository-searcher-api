@@ -45,14 +45,6 @@ class GithubService {
     $response = $client->get($path . '?' . $queryString);
     $data = json_decode($response->getBody(), true);
 
-    $sortOrder = ($search['sortOrder'] ?? '') === 'asc' ? 'asc' : 'desc';
-    Log::debug("sortOrder: $sortOrder");
-
-    $allowedSort = ['name', 'stargazers_count', 'updated_at'];
-    $sortField = $search['sortField'];
-    $sort = isset($allowedSort[$sortField]) ? $sortField : 'name';
-    Log::debug("sort: $sort");
-
     $repositories = collect($data['items'])
       ->map(function ($item) {
         return [
@@ -67,7 +59,13 @@ class GithubService {
         ];
       });
 
-    $sortedRepositories = GithubService::sortRepositories($repositories, $sort, $sortOrder);
+    $sortOrder = ($search['sortOrder'] ?? '') === 'asc' ? 'asc' : 'desc';
+    Log::debug("sortOrder: $sortOrder");
+
+    $sortField = $search['sortField'];
+    Log::debug("sortField: $sortField");
+
+    $sortedRepositories = GithubService::sortRepositories($repositories, $sortField, $sortOrder);
 
     return [
       'repositories' => $sortedRepositories->values()->all(),
@@ -75,7 +73,7 @@ class GithubService {
         'total' => $data['total_count'],
         'filter' => $filter,
         'sortOrder' => $sortOrder,
-        'sortField' => $sort,
+        'sortField' => $sortField,
         'pageSize' => $perPage,
         'pageNumber' => $page,
       ],
@@ -83,10 +81,29 @@ class GithubService {
   }
 
   private static function sortRepositories($repositories, $sortField, $sortOrder) {
-    if ($sortOrder === 'asc') {
-      return $repositories->sortBy($sortField);
-    } else {
-      return $repositories->sortByDesc($sortField);
-    }
+    return $repositories->sort(function ($a, $b) use($sortField, $sortOrder) {
+      if ($sortField == 'stargazers_count') {
+        if ($sortOrder == 'asc') {
+          return $a['stargazers_count'] - $b['stargazers_count'];
+        } else {
+          return $b['stargazers_count'] - $a['stargazers_count'];
+        }
+      } else if ($sortField == 'updated_at') {
+        $date1 = strtotime($a['updated_at']);
+        $date2 = strtotime($b['updated_at']);
+
+        if ($sortOrder == 'asc') {
+          return $date1 - $date2;
+        } else {
+          return $date2 - $date1;
+        }
+      } else {
+        if ($sortOrder == 'asc') {
+          return strnatcasecmp($a['name'], $b['name']);
+        } else {
+          return strnatcasecmp($b['name'], $a['name']);
+        }
+      }
+    });
   }
 }
